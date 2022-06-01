@@ -296,15 +296,28 @@ void gen_lval(Node *node){
 void gen(Node *node){
   char argu[][4] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
 
-  switch(node->kind){
-    case ND_FUNC_DEC:
-      
+  switch(node->kind){  
     case ND_FUNC:
       for(int i = 0; i < node->offset; i++)
         gen(&node[node->offset - i]);
       for(int i = 0; i < node->offset; i++)
         printf("    pop %s\n", argu[i]);
+      printf("    mov rax, rsp\n");
+      printf("    and rax, 15\n");
+      printf("    jnz .Lend%03d\n", lavel_count);
+      lavel_count++;
+      printf("    mov rax, 0\n");
       printf("    call %s\n", node->funcname);
+      printf("    jmp .Lend%03d\n", lavel_count);
+      lavel_count--;
+      printf(".Lend%03d:\n", lavel_count);
+      printf("    sub rsp, 8\n");
+      printf("    mov rax, 0\n");
+      printf("    call %s\n", node->funcname);
+      printf("    add rsp, 8\n");
+      lavel_count++;
+      printf(".Lend%03d:\n", lavel_count);
+      lavel_count++;
       return;
     case ND_BLOCK:
       for(int i = 1; i <= node[0].offset; i++) {
