@@ -46,51 +46,35 @@ Node *new_node_num(int val){
 //            | ident ("(" stmt* ")")?
 //            | "(" expr ")"
 
-
-
-void program(){
-    int i=0;
-    while(!at_eof())
-        code[i++]=stmt();
-    code[i]=NULL;
+void program() {
+  int i = 0;
+  while(!at_eof()) {
+    code[i++] = func();
+  }
+  code[i] = NULL;
 }
 
-Node *function() {
-
-  Token *tok = token;
-  tok = consume_kind(TK_IDENT);
-  if(tok) {
-    if(consume("(")){
-      //関数呼び出し
-      Node *node = malloc(sizeof(Node)*11);
-      node->kind = ND_FUNC_DEC;
-      node->funcname = tok->str;
-      char *p = node->funcname;
-      p[tok->len] = '\0';
-      if(consume(")"))
-        return node;
-      // 引数　とりあえず10個
-      for(int i = 1; token; i++){
-        node[i] = *expr();
-        node[0].offset++;
-        if(consume(")"))
-          break;;
-        expect(",");
-      }
-      expect("{");
-      // TODO メモリを随時確保できるようにする
-      node = malloc(sizeof(Node)*100);
-      node->kind = ND_BLOCK;
-      for(int i = 1; token; i++){
-        if(consume("}"))
-          return node;
-        node[i] = *stmt();
-        node[0].offset++;
-      }
-    }
-
+Node *func() {
+  Node *node;
+  Token *tok = consume_kind(TK_IDENT);
+  if(tok == NULL)
+    error("Not function");
+  expect("(");
+  //TODO args
+  expect(")");
+  consume_kind(TK_BLOCK);
+  node = malloc(sizeof(Node)*100);
+  node->kind = ND_FUNC_DEF;
+  node->funcname = tok->str;
+  char *p = node->funcname;
+  p[tok->len] = '\0';
+  for(int i = 1; token; i++) {
+    if(consume("}"))
+      return node;
+    node[i] = *stmt();
+    node[0].offset++;
   }
-    
+  return node;
 }
 
 Node *stmt(){
@@ -244,7 +228,7 @@ Node *primary(){
     if(consume("(")){
       //関数呼び出し
       Node *node = malloc(sizeof(Node)*11);
-      node->kind = ND_FUNC;
+      node->kind = ND_FUNC_CALL;
       node->funcname = tok->str;
       char *p = node->funcname;
       p[tok->len] = '\0';
@@ -296,8 +280,18 @@ void gen_lval(Node *node){
 void gen(Node *node){
   char argu[][4] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
 
-  switch(node->kind){  
-    case ND_FUNC:
+  switch(node->kind){
+    case ND_FUNC_DEF:
+      printf("%s:\n", node->funcname);
+      printf("    push rbp\n");
+      printf("    mov rbp, rsp\n");
+      printf("    sub rsp, 200\n");
+      for(int i = 1; i <= node[0].offset; i++) {
+        gen(&node[i]);
+        printf("    pop rax\n");
+      }
+      return;
+    case ND_FUNC_CALL:
       for(int i = 0; i < node->offset; i++)
         gen(&node[node->offset - i]);
       for(int i = 0; i < node->offset; i++)

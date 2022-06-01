@@ -47,8 +47,8 @@ typedef enum{
   ND_WHILE,
   ND_FOR,
   ND_BLOCK,
-  ND_FUNC,
-  ND_FUNC_DEC,
+  ND_FUNC_CALL,
+  ND_FUNC_DEF,
 } NodeKind;
 
 typedef struct Node Node;
@@ -108,6 +108,7 @@ LVar *find_lvar(Token *tok);
 // primary    = num | ident | "(" expr ")"
 
 void program();
+Node *func();
 Node *stmt();
 Node *expr();
 Node *assign();

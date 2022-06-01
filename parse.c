@@ -92,61 +92,61 @@ Token *tokenize(){
     }
 
     if(startswith(p, "==") || startswith(p, "!=") ||
-       startswith(p, "<=") || startswith(p, ">=")){
-          cur=new_token(TK_RESERVED, cur, p, 2);
-          p+=2;
+       startswith(p, "<=") || startswith(p, ">=")) {
+          cur = new_token(TK_RESERVED, cur, p, 2);
+          p += 2;
           continue;
           }
     
-    if(strchr("+-*/()<>=;},", *p)){
-      cur=new_token(TK_RESERVED, cur, p++, 1);
+    if(strchr("+-*/()<>=;},", *p)) {
+      cur = new_token(TK_RESERVED, cur, p++, 1);
       continue;
     }
 
-    if(startswith(p, "{")){
-      cur=new_token(TK_BLOCK, cur, p++, 1);
+    if(startswith(p, "{")) {
+      cur = new_token(TK_BLOCK, cur, p++, 1);
       continue;
     }
 
-    if(startswith(p, "return") && !is_alnum(p[6])){
-      cur=new_token(TK_RETURN, cur, p, 6);
-      p+=6;
+    if(startswith(p, "return") && !is_alnum(p[6])) {
+      cur = new_token(TK_RETURN, cur, p, 6);
+      p += 6;
       continue;
     }
 
-    if(startswith(p, "if") && !is_alnum(p[2])){
-      cur=new_token(TK_IF, cur, p, 2);
-      p+=2;
+    if(startswith(p, "if") && !is_alnum(p[2])) {
+      cur = new_token(TK_IF, cur, p, 2);
+      p += 2;
       continue;
     }
 
-    if(startswith(p, "else") && !is_alnum(p[4])){
-      cur=new_token(TK_ELSE, cur, p, 4);
-      p+=4;
+    if(startswith(p, "else") && !is_alnum(p[4])) {
+      cur = new_token(TK_ELSE, cur, p, 4);
+      p += 4;
       continue;
     }
 
-    if(startswith(p, "while") && !is_alnum(p[5])){
-      cur=new_token(TK_WHILE, cur, p, 5);
-      p+=5;
+    if(startswith(p, "while") && !is_alnum(p[5])) {
+      cur = new_token(TK_WHILE, cur, p, 5);
+      p += 5;
       continue;
     }
 
-    if(startswith(p, "for") && !is_alnum(p[3])){
-      cur=new_token(TK_FOR, cur, p, 3);
-      p+=3;
+    if(startswith(p, "for") && !is_alnum(p[3])) {
+      cur = new_token(TK_FOR, cur, p, 3);
+      p += 3;
       continue;
     }
 
-    if('a'<=*p && *p<='z'){
-        char *q=p;
+    if('a'<=*p && *p<='z') {
+        char *q = p;
         while(is_alnum(*q)) q++;
-        cur=new_token(TK_IDENT, cur, p, q-p);
-        p=q;
+        cur = new_token(TK_IDENT, cur, p, q-p);
+        p = q;
         continue;
     }
 
-    if(isdigit(*p)){
+    if(isdigit(*p)) {
       cur=new_token(TK_NUM, cur, p, 0);
       char *q=p;
       cur->val=strtol(p, &p, 10);
