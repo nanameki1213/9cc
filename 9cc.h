@@ -71,7 +71,8 @@ struct LVar{
   int offset;
 };
 
-LVar *locals;
+//関数ごとにローカル変数を用意
+LVar *locals[20];
 
 Token *token;
 
@@ -80,6 +81,8 @@ Node *code[100];
 char *user_input;
 
 int lavel_count;
+
+int FuncDefCount;
 
 void error_at(char *loc, char *fmt, ...);
 void error(char *fmt, ...);
@@ -95,6 +98,7 @@ Node *new_node(NodeKind kind);
 Node *new_binary(NodeKind kind, Node *lhs, Node *rhs);
 Node *new_node_num(int val);
 LVar *find_lvar(Token *tok);
+LVar *find_arg(Token *tok);
 
 // program    = stmt*
 // stmt       = expr ";"

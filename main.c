@@ -6,9 +6,9 @@ int main(int argc, char **argv){
     return 1;
   }
 
-  locals=NULL;
-  user_input=argv[1];
-  token=tokenize();
+  locals[0] = NULL;
+  user_input = argv[1];
+  token = tokenize();
   program();
   printf(".intel_syntax noprefix\n");
   printf(".globl main\n");

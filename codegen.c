@@ -1,7 +1,7 @@
 #include "9cc.h"
 
 LVar *find_lvar(Token *tok){
-  for(LVar *var =locals; var; var=var->next)
+  for(LVar *var =locals[FuncDefCount]; var; var=var->next)
     if(var->len==tok->len && !memcmp(tok->str, var->name, var->len))
       return var;
   return NULL;
@@ -47,11 +47,10 @@ Node *new_node_num(int val){
 //            | "(" expr ")"
 
 void program() {
-  int i = 0;
   while(!at_eof()) {
-    code[i++] = func();
+    code[FuncDefCount++] = func();
   }
-  code[i] = NULL;
+  code[FuncDefCount] = NULL;
 }
 
 Node *func() {
@@ -62,7 +61,25 @@ Node *func() {
     error("Not function");
   expect("(");
   //TODO args
-  expect(")");
+  while(!consume(")")) {
+    Token *arg = consume_kind(TK_IDENT);
+    LVar *lvar;
+    lvar = calloc(1, sizeof(LVar));
+    lvar->next = locals[FuncDefCount];
+    lvar->name = arg->str;
+    lvar->len = arg->len;
+    if(locals[FuncDefCount])
+      lvar->offset = locals[FuncDefCount]->offset+8;
+    else 
+      lvar->offset = 8;
+    locals[FuncDefCount] = lvar;
+    node->val++;
+    if(consume(")"))
+      break;
+    else 
+      expect(",");
+  }
+  fprintf(stderr, "%d\n", node->val);
   consume_kind(TK_BLOCK);
   node->kind = ND_FUNC_DEF;
   node->funcname = tok->str;
@@ -253,15 +270,15 @@ Node *primary(){
       node->offset=lvar->offset;
     }else{
       lvar=calloc(1, sizeof(LVar));
-      lvar->next=locals;
+      lvar->next=locals[FuncDefCount];
       lvar->name=tok->str;
       lvar->len=tok->len;
-      if(locals)
-        lvar->offset=locals->offset+8;
+      if(locals[FuncDefCount])
+        lvar->offset=locals[FuncDefCount]->offset+8;
       else 
         lvar->offset=8;
       node->offset=lvar->offset;
-      locals=lvar;
+      locals[FuncDefCount]=lvar;
     }
     return node;
   }
@@ -286,7 +303,14 @@ void gen(Node *node){
       printf("%s:\n", node->funcname);
       printf("    push rbp\n");
       printf("    mov rbp, rsp\n");
-      printf("    sub rsp, 200\n"); //TODO 引数の数*8だけ用意する
+      printf("    sub rsp, %d\n", 200);
+      for(int i = 0; i < node->val; i++) {
+        printf("    mov rax, rbp\n");
+        printf("    sub rax, %d\n", (i+1)*8);
+        printf("    push %s\n", arg[i]);
+        printf("    pop rbx\n");
+        printf("    mov [rax], rbx\n");
+      }
       for(int i = 1; i <= node[0].offset; i++) {
         gen(&node[i]);
       }
