@@ -26,8 +26,8 @@ Node *new_node_num(int val){
   return node;
 }
 
-// program    = function*
-// function
+// program    = func*
+// func
 //        "(" expr* ")"
 //        "{" stmt* "}"
 // stmt    = expr ";"
@@ -55,7 +55,8 @@ void program() {
 }
 
 Node *func() {
-  Node *node;
+  Node *node = malloc(sizeof(Node)*100);
+  int i = 0;
   Token *tok = consume_kind(TK_IDENT);
   if(tok == NULL)
     error("Not function");
@@ -63,15 +64,14 @@ Node *func() {
   //TODO args
   expect(")");
   consume_kind(TK_BLOCK);
-  node = malloc(sizeof(Node)*100);
   node->kind = ND_FUNC_DEF;
   node->funcname = tok->str;
   char *p = node->funcname;
   p[tok->len] = '\0';
-  for(int i = 1; token; i++) {
+  for(int j = 1; token; j++) {
     if(consume("}"))
       return node;
-    node[i] = *stmt();
+    node[j] = *stmt();
     node[0].offset++;
   }
   return node;
@@ -224,6 +224,7 @@ Node *primary(){
     return node;
   }
   Token *tok=consume_kind(TK_IDENT);
+  int i = 0;
   if(tok){
     if(consume("(")){
       //関数呼び出し
@@ -234,8 +235,8 @@ Node *primary(){
       p[tok->len] = '\0';
       if(consume(")"))
         return node;
-      // 引数　とりあえず10個
-      for(int i = 1; token; i++){
+      // 引数　6個まで対応
+       for(int i = 1; token; i++){
         node[i] = *expr();
         node[0].offset++;
         if(consume(")"))
@@ -278,24 +279,23 @@ void gen_lval(Node *node){
 }
 
 void gen(Node *node){
-  char argu[][4] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
-
+  //TODO 関数の戻り値をpushする
+  char arg[][4] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
   switch(node->kind){
     case ND_FUNC_DEF:
       printf("%s:\n", node->funcname);
       printf("    push rbp\n");
       printf("    mov rbp, rsp\n");
-      printf("    sub rsp, 200\n");
+      printf("    sub rsp, 200\n"); //TODO 引数の数*8だけ用意する
       for(int i = 1; i <= node[0].offset; i++) {
         gen(&node[i]);
-        printf("    pop rax\n");
       }
       return;
     case ND_FUNC_CALL:
       for(int i = 0; i < node->offset; i++)
         gen(&node[node->offset - i]);
       for(int i = 0; i < node->offset; i++)
-        printf("    pop %s\n", argu[i]);
+        printf("    pop %s\n", arg[i]);
       printf("    mov rax, rsp\n");
       printf("    and rax, 15\n");
       printf("    jnz .Lend%03d\n", lavel_count);
@@ -312,6 +312,7 @@ void gen(Node *node){
       lavel_count++;
       printf(".Lend%03d:\n", lavel_count);
       lavel_count++;
+      printf("    push rax\n");
       return;
     case ND_BLOCK:
       for(int i = 1; i <= node[0].offset; i++) {

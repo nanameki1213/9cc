@@ -14,7 +14,6 @@ int main(int argc, char **argv){
   printf(".globl main\n");
   for(int i = 0; code[i]; i++) {
     gen(code[i]);
-    printf("    pop rax\n");
   }
   return 0;
 }
