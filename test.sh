@@ -85,4 +85,35 @@ assert 55 "main(){ sum = 0; for(i=1; i<=10; i=i+1) sum = sum+i; return sum; }"
 assert 20 "func() { x = 10;  i = 20; return i; } main() { a = func(); return a; }"
 assert 1 "func(x) {return x;} main(){ return func(1);}"
 assert 4 "func(x, y) { return x+y; } main(){return func(1, 3);}"
+assert 120 "
+fact(n)
+{
+  m = 0;
+
+  if (n == 0)
+    return 1;
+  m = fact(n - 1);
+  return n * m;
+}
+
+main()
+{
+  ans = fact(5);
+  return ans;
+}
+"
+assert 3 "
+main(){
+    x = 3;
+    y = &x;
+    return *y;
+}"
+
+assert 3 "
+main() {
+    x = 0;
+    y = 3;
+    p = &y;
+    return *p;
+}"
 echo OK

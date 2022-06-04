@@ -41,7 +41,10 @@ Node *new_node_num(int val){
 // relational = add ("<" add | "<=" add | ">" add | ">=" add)*
 // add        = mul ("+" mul | "-" mul)*
 // mul        = unary ("*" unary | "/" unary)*
-// unary      = ("+" | "-")? primary
+// unary = "+"? primary
+//       | "-"? primary
+//       | "*" unary
+//       | "&" unary
 // primary    = num 
 //            | ident ("(" stmt* ")")?
 //            | "(" expr ")"
@@ -60,7 +63,6 @@ Node *func() {
   if(tok == NULL)
     error("Not function");
   expect("(");
-  //TODO args
   while(!consume(")")) {
     Token *arg = consume_kind(TK_IDENT);
     LVar *lvar;
@@ -79,7 +81,6 @@ Node *func() {
     else 
       expect(",");
   }
-  fprintf(stderr, "%d\n", node->val);
   consume_kind(TK_BLOCK);
   node->kind = ND_FUNC_DEF;
   node->funcname = tok->str;
@@ -231,6 +232,10 @@ Node *unary(){
     return unary();
   if(consume("-"))
     return new_binary(ND_SUB, new_node_num(0), unary());
+  if(consume("*"))
+    return new_binary(ND_DEREF, unary(), NULL);
+  if(consume("&"))
+    return new_binary(ND_ADDR, unary(), NULL);
   return primary();
 }
 
@@ -296,9 +301,23 @@ void gen_lval(Node *node){
 }
 
 void gen(Node *node){
-  //TODO 関数の戻り値をpushする
   char arg[][4] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
   switch(node->kind){
+    case ND_ADDR:
+        printf("    push %d\n", node->lhs->offset);
+      return;
+    case ND_DEREF:
+      gen_lval(node->lhs);
+      printf("    pop rax\n");
+      printf("    mov rax, [rax]\n");
+      printf("    push rax\n");
+      printf("    push rbp\n");
+      printf("    pop rax\n");
+      printf("    pop rbx\n");
+      printf("    sub rax, rbx\n");
+      printf("    mov rax, [rax]\n");
+      printf("    push rax\n");
+      return;
     case ND_FUNC_DEF:
       printf("%s:\n", node->funcname);
       printf("    push rbp\n");
