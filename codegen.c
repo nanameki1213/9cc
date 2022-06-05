@@ -59,12 +59,20 @@ void program() {
 Node *func() {
   Node *node = malloc(sizeof(Node)*100);
   int i = 0;
-  Token *tok = consume_kind(TK_IDENT);
+  Token *tok = consume_kind(TK_INT);
   if(tok == NULL)
-    error("Not function");
+    error("Not function\n");
+  tok = consume_kind(TK_IDENT);
+  if(tok == NULL)
+    error("Not function\n");
   expect("(");
   while(!consume(")")) {
-    Token *arg = consume_kind(TK_IDENT);
+    Token *arg = consume_kind(TK_INT);
+    if(tok == NULL)
+      error("");
+    arg = consume_kind(TK_IDENT);
+    if(tok == NULL)
+      error("");  
     LVar *lvar;
     lvar = calloc(1, sizeof(LVar));
     lvar->next = locals[FuncDefCount];
@@ -151,7 +159,30 @@ Node *stmt(){
         node[0].offset++;
       }
     }
-    
+
+    if(consume_kind(TK_INT)) {
+      Token *tok = consume_kind(TK_IDENT);
+      LVar *lvar = find_lvar(tok);
+      node = calloc(1, sizeof(Node));
+      node->kind = ND_LVAR;
+      if(lvar) {
+        fprintf(stderr, "宣言済みの変数\n");
+      } else {
+        lvar=calloc(1, sizeof(LVar));
+        lvar->next=locals[FuncDefCount];
+        lvar->name=tok->str;
+        lvar->len=tok->len;
+        if(locals[FuncDefCount])
+          lvar->offset=locals[FuncDefCount]->offset+8;
+        else 
+          lvar->offset=8;
+        node->offset=lvar->offset;
+        locals[FuncDefCount]=lvar;
+      }
+      expect(";");
+      return node;
+    }
+
     if (consume_kind(TK_RETURN)) {
       node = calloc(1, sizeof(Node));
       node->kind = ND_RETURN;
@@ -274,16 +305,7 @@ Node *primary(){
     if(lvar){
       node->offset=lvar->offset;
     }else{
-      lvar=calloc(1, sizeof(LVar));
-      lvar->next=locals[FuncDefCount];
-      lvar->name=tok->str;
-      lvar->len=tok->len;
-      if(locals[FuncDefCount])
-        lvar->offset=locals[FuncDefCount]->offset+8;
-      else 
-        lvar->offset=8;
-      node->offset=lvar->offset;
-      locals[FuncDefCount]=lvar;
+      fprintf(stderr, "定義されていない変数\n");
     }
     return node;
   }

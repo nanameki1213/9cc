@@ -81,13 +81,10 @@ assert(){
 # assert 0 "bar(3, 4); return 0;"
 # assert 0 "bar2(3, 4, 5); return 0;"
 
-assert 55 "main(){ sum = 0; for(i=1; i<=10; i=i+1) sum = sum+i; return sum; }"
-assert 20 "func() { x = 10;  i = 20; return i; } main() { a = func(); return a; }"
-assert 1 "func(x) {return x;} main(){ return func(1);}"
-assert 4 "func(x, y) { return x+y; } main(){return func(1, 3);}"
 assert 120 "
-fact(n)
+int fact(int n)
 {
+  int m;
   m = 0;
 
   if (n == 0)
@@ -96,24 +93,31 @@ fact(n)
   return n * m;
 }
 
-main()
+int main()
 {
+  int ans;
   ans = fact(5);
   return ans;
 }
 "
 assert 3 "
-main(){
+int main(){
+    int x; 
     x = 3;
+    int y;
     y = &x;
     return *y;
 }"
 
 assert 3 "
-main() {
+int main() {
+    int x; 
     x = 0;
+    int y; 
     y = 3;
+    int p; 
     p = &y;
     return *p;
 }"
+assert 3 "int main() { int a; a = 3; return a;}"
 echo OK

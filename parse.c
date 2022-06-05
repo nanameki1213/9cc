@@ -138,6 +138,12 @@ Token *tokenize(){
       continue;
     }
 
+    if(startswith(p, "int") && !is_alnum(p[3])) {
+      cur = new_token(TK_INT, cur, p, 3);
+      p += 3;
+      continue;
+    }
+
     if('a'<=*p && *p<='z') {
         char *q = p;
         while(is_alnum(*q)) q++;
