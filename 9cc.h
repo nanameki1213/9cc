@@ -65,6 +65,18 @@ struct Node{
   char *funcname;
 };
 
+typedef enum {
+  INT,
+  PTR,
+} Chartype;
+
+typedef struct Type Type;
+
+struct Type {
+  Chartype ty;
+  Type *ptr_to;
+};
+
 typedef struct LVar LVar;
 
 struct LVar{
@@ -72,6 +84,7 @@ struct LVar{
   char *name;
   int len;
   int offset;
+  Type *type;
 };
 
 //関数ごとにローカル変数を用意
@@ -102,6 +115,7 @@ Node *new_binary(NodeKind kind, Node *lhs, Node *rhs);
 Node *new_node_num(int val);
 LVar *find_lvar(Token *tok);
 LVar *find_arg(Token *tok);
+LVar *define_lvar(Token *tok);
 
 // program    = stmt*
 // stmt       = expr ";"

@@ -1,10 +1,39 @@
 #include "9cc.h"
 
-LVar *find_lvar(Token *tok){
+LVar *find_lvar(Token *tok) {
+  while(consume("*")) ;
   for(LVar *var =locals[FuncDefCount]; var; var=var->next)
     if(var->len==tok->len && !memcmp(tok->str, var->name, var->len))
       return var;
   return NULL;
+}
+
+//TODO この関数の中で型を判別する
+LVar *define_lvar(Token *tok) {
+  LVar *lvar;
+  Type *type;
+  lvar = calloc(1, sizeof(LVar));
+  type = calloc(1, sizeof(Type));
+  if(tok->kind == TK_RESERVED) {
+    tok = tok->next;
+    LVar *ptr = define_lvar(tok);
+    type->ty == PTR;
+    type->ptr_to = ptr->type;
+    consume_kind(TK_RESERVED);
+  } else {
+    type->ty = INT;
+    consume_kind(TK_IDENT);
+  }
+  lvar->next = locals[FuncDefCount];
+  lvar->name = tok->str;
+  lvar->len = tok->len;
+  lvar->type = type;
+  if(locals[FuncDefCount])
+    lvar->offset = locals[FuncDefCount]->offset+8;
+  else 
+    lvar->offset = 8;
+  locals[FuncDefCount] = lvar;
+  return lvar;
 }
 
 Node *new_node(NodeKind kind){
@@ -35,6 +64,7 @@ Node *new_node_num(int val){
 //        | "if" "(" expr ")" stmt ("else" stmt)?
 //        | "while" "(" expr ")" stmt
 //        | "for" "(" expr? ";" expr? ";" expr? ")" stmt
+//        | "int" "*"* ident ";"
 // expr       = assign
 // assign     = equality ("=" assign)?
 // equality   = relational ("==" relational | "!=" relational)*
@@ -73,16 +103,7 @@ Node *func() {
     arg = consume_kind(TK_IDENT);
     if(tok == NULL)
       error("");  
-    LVar *lvar;
-    lvar = calloc(1, sizeof(LVar));
-    lvar->next = locals[FuncDefCount];
-    lvar->name = arg->str;
-    lvar->len = arg->len;
-    if(locals[FuncDefCount])
-      lvar->offset = locals[FuncDefCount]->offset+8;
-    else 
-      lvar->offset = 8;
-    locals[FuncDefCount] = lvar;
+    LVar *lvar = define_lvar(arg);
     node->val++;
     if(consume(")"))
       break;
@@ -161,29 +182,19 @@ Node *stmt(){
     }
 
     if(consume_kind(TK_INT)) {
-      Token *tok = consume_kind(TK_IDENT);
-      LVar *lvar = find_lvar(tok);
+      LVar *lvar = find_lvar(token);
       node = calloc(1, sizeof(Node));
       node->kind = ND_LVAR;
       if(lvar) {
         fprintf(stderr, "宣言済みの変数\n");
       } else {
-        lvar=calloc(1, sizeof(LVar));
-        lvar->next=locals[FuncDefCount];
-        lvar->name=tok->str;
-        lvar->len=tok->len;
-        if(locals[FuncDefCount])
-          lvar->offset=locals[FuncDefCount]->offset+8;
-        else 
-          lvar->offset=8;
-        node->offset=lvar->offset;
-        locals[FuncDefCount]=lvar;
+        lvar = define_lvar(token);
       }
       expect(";");
       return node;
     }
 
-    if (consume_kind(TK_RETURN)) {
+    if(consume_kind(TK_RETURN)) {
       node = calloc(1, sizeof(Node));
       node->kind = ND_RETURN;
       node->lhs = expr();
@@ -249,6 +260,7 @@ Node *add(){
 Node *mul(){
   Node *node=unary();
   for(;;){
+    fprintf(stderr, "error\n");
     if(consume("*"))
       node=new_binary(ND_MUL, node, unary());
     else if (consume("/"))
@@ -298,10 +310,10 @@ Node *primary(){
       }
       return node;
     }
-    Node *node=calloc(1, sizeof(Node));
-    node->kind=ND_LVAR;
+    Node *node = calloc(1, sizeof(Node)); 
+    node->kind = ND_LVAR;
     
-    LVar *lvar=find_lvar(tok);
+    LVar *lvar = find_lvar(tok);
     if(lvar){
       node->offset=lvar->offset;
     }else{
@@ -316,7 +328,6 @@ Node *primary(){
 void gen_lval(Node *node){
     if(node->kind!=ND_LVAR)
         error("代入の左辺値が変数ではありません");
-
     printf("    mov rax, rbp\n");
     printf("    sub rax, %d\n", node->offset);
     printf("    push rax\n");
