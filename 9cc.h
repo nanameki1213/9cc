@@ -141,4 +141,5 @@ Node *unary();
 Node *primary();
 
 void gen_lval(Node *node);
+void gen_lval_deref(Node *node);
 void gen(Node *node);

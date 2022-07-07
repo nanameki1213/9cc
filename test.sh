@@ -119,6 +119,14 @@ int main() {
     p = &y;
     return *p;
 }"
-assert 3 "int main() { int a; a = 3; return a;}"
+
+assert 3 "
+int main(){
+  int x;
+  int *y;
+  y = &x;
+  *y = 3;
+  return x;
+}"
 
 echo OK

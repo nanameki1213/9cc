@@ -1,7 +1,9 @@
 #include "9cc.h"
 
 LVar *find_lvar(Token *tok) {
-  while(consume("*")) ;
+  // while(tok->kind == TK_RESERVED)
+  //   tok = consume_kind(TK_RESERVED);
+  if(tok->kind == TK_RESERVED) consume("*");
   for(LVar *var =locals[FuncDefCount]; var; var=var->next)
     if(var->len==tok->len && !memcmp(tok->str, var->name, var->len))
       return var;
@@ -10,14 +12,13 @@ LVar *find_lvar(Token *tok) {
 
 //TODO この関数の中で型を判別する
 LVar *define_lvar(Token *tok) {
-  LVar *lvar;
-  Type *type;
-  lvar = calloc(1, sizeof(LVar));
-  type = calloc(1, sizeof(Type));
+  LVar *lvar = calloc(1, sizeof(LVar));
+  Type *type = calloc(1, sizeof(Type));
   if(tok->kind == TK_RESERVED) {
     tok = tok->next;
-    LVar *ptr = define_lvar(tok);
-    type->ty == PTR;
+    LVar *ptr = calloc(1, sizeof(LVar));
+    ptr = define_lvar(tok);
+    type->ty = PTR;
     type->ptr_to = ptr->type;
     consume_kind(TK_RESERVED);
   } else {
@@ -189,6 +190,7 @@ Node *stmt(){
         fprintf(stderr, "宣言済みの変数\n");
       } else {
         lvar = define_lvar(token);
+        node->offset = lvar->offset;
       }
       expect(";");
       return node;
@@ -259,8 +261,7 @@ Node *add(){
 
 Node *mul(){
   Node *node=unary();
-  for(;;){
-    fprintf(stderr, "error\n");
+  for(;;) {
     if(consume("*"))
       node=new_binary(ND_MUL, node, unary());
     else if (consume("/"))
@@ -312,7 +313,6 @@ Node *primary(){
     }
     Node *node = calloc(1, sizeof(Node)); 
     node->kind = ND_LVAR;
-    
     LVar *lvar = find_lvar(tok);
     if(lvar){
       node->offset=lvar->offset;
@@ -326,11 +326,22 @@ Node *primary(){
 }
 
 void gen_lval(Node *node){
-    if(node->kind!=ND_LVAR)
-        error("代入の左辺値が変数ではありません");
-    printf("    mov rax, rbp\n");
-    printf("    sub rax, %d\n", node->offset);
-    printf("    push rax\n");
+  if(node->kind != ND_LVAR)
+    error("代入の左辺値が変数ではありません");
+  printf("    mov rax, rbp\n");
+  printf("    sub rax, %d\n", node->offset);
+  printf("    push rax\n");
+}
+
+void gen_lval_deref(Node *node) {
+  if(node->kind != ND_LVAR)
+    error("代入の左辺値が変数ではありません");
+  printf("    mov rax, rbp\n");
+  printf("    sub rax, %d\n", node->offset);
+  printf("    mov rbx, rbp\n");
+  printf("    sub rbx, [rax]\n");
+  printf("    mov rax, rbx\n");
+  printf("    push rax\n");
 }
 
 void gen(Node *node){
@@ -340,14 +351,8 @@ void gen(Node *node){
         printf("    push %d\n", node->lhs->offset);
       return;
     case ND_DEREF:
-      gen_lval(node->lhs);
+      gen_lval_deref(node->lhs);
       printf("    pop rax\n");
-      printf("    mov rax, [rax]\n");
-      printf("    push rax\n");
-      printf("    push rbp\n");
-      printf("    pop rax\n");
-      printf("    pop rbx\n");
-      printf("    sub rax, rbx\n");
       printf("    mov rax, [rax]\n");
       printf("    push rax\n");
       return;
@@ -453,7 +458,10 @@ void gen(Node *node){
       printf("    push rax\n");
       return;
     case ND_ASSIGN:
-      gen_lval(node->lhs);
+      if(node->lhs->kind == ND_DEREF)
+        gen_lval_deref(node->lhs->lhs);
+      else
+        gen_lval(node->lhs);
       gen(node->rhs);
       printf("    pop rdi\n");
       printf("    pop rax\n");
