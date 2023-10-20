@@ -6,7 +6,6 @@ CFLAGS=-std=c11 -g -static
 	gcc -Wall -c codegen.c
 	gcc -o main.o parse.o codegen.o
 
-
 test: 9cc
 	./test.sh
 
